@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>HoloArrow</title>
+<style>
+:root{color-scheme:dark;--bg:#000;--fg:#e8f6ff;--ac:#5ff;--dim:#7a9aa8;box-sizing:border-box;padding:0}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
+#app{display:flex;position:fixed;inset:0}
+#info{width:30%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2vmin;text-align:center;position:relative}
+#l1{font-size:5vmin;color:var(--dim)}
+#l2{font-size:12vmin;font-weight:700;color:var(--ac);line-height:1}
+#l3{font-size:7vmin}
+#stage{width:70%;height:100%}
+#stage canvas{display:block}
+#gear{position:fixed;left:8px;top:8px;z-index:3;background:none;border:1px solid #345;color:var(--dim);border-radius:6px;font-size:16px;padding:2px 8px;opacity:.35}
+#demo{display:none;position:fixed;left:0;right:0;bottom:0;height:0;z-index:3;font-size:14px;color:var(--fg)}
+#demo label{position:absolute;bottom:8px;left:8px;width:36%;box-sizing:border-box;padding:6px 12px 2px;background:#000b;border:1px solid #2a4;border-radius:12px;touch-action:none}
+#demo label:last-child{left:auto;right:8px}
+#demo input{width:100%;height:40px;margin:0;touch-action:none;-webkit-appearance:none;appearance:none;background:transparent}
+#demo input::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:#2a7}
+#demo input::-webkit-slider-thumb{-webkit-appearance:none;width:36px;height:36px;margin-top:-14px;border-radius:50%;background:#cf4;border:2px solid #fff}
+#demo input::-moz-range-track{height:8px;border-radius:4px;background:#2a7}
+#demo input::-moz-range-thumb{width:32px;height:32px;border-radius:50%;background:#cf4;border:2px solid #fff}
+#stage,#info{touch-action:none}
+html{overscroll-behavior:none}
+#demo input{display:none!important}
+.sl{position:relative;height:44px;touch-action:none}
+.sl i{position:absolute;left:0;right:0;top:18px;height:8px;border-radius:4px;background:#2a7}
+.sl b{position:absolute;top:4px;width:36px;height:36px;margin-left:-18px;border-radius:50%;background:#cf4;border:2px solid #fff;box-sizing:border-box}
+#demo .sw{position:absolute;right:10px;top:4px;font-size:12px;padding:2px 10px;border-radius:10px;border:1px solid #2a4;background:#031;color:var(--fg)}
+#demo .sw.on{background:#2a7}
+#warn{position:fixed;left:52px;top:10px;z-index:3;font-size:11px;color:#f66;pointer-events:none}
+body:not(.m4) #warn{display:none}
+#fs{position:fixed;left:52px;top:28px;z-index:3;font-size:11px;color:#9cf;pointer-events:none}
+#vt{position:fixed;left:0;top:0;transform-origin:0 0;width:calc(var(--mm,6px)*26);height:calc(var(--mm,6px)*17);z-index:2;pointer-events:none;color:#cfff7a;text-shadow:0 0 calc(var(--mm,6px)*.6) rgba(140,255,120,.85);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;white-space:nowrap;display:none}
+#vt .a{font-size:calc(var(--mm,6px)*3.2);line-height:calc(var(--mm,6px)*4.2)}
+#vt .b{font-size:calc(var(--mm,6px)*7);line-height:calc(var(--mm,6px)*8);font-weight:700}
+#vt .c{font-size:calc(var(--mm,6px)*3.6);line-height:calc(var(--mm,6px)*4.8)}
+body.m4 #info{display:none}
+body.m4 #stage{width:100%}
+#menu{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:5}
+#menu .box{display:flex;flex-direction:column;gap:8px;max-width:420px;width:80%;max-height:92%;overflow:auto;padding:12px}
+#menu button,#menu input{font-size:16px;padding:9px;border-radius:8px;border:1px solid #456;background:#112;color:var(--fg)}
+#menu button.p{background:#0a6;border-color:#0c8}
+#menu h1{font-size:18px;margin:0}
+#msg{font-size:12px;color:var(--dim);min-height:1em}
+</style>
+</head>
+<body>
+<div id="warn"></div>
+<div id="fs"></div>
+<div id="vt"><div class="a">目的地まで</div><div class="b" id="vt2">--</div><div class="c" id="vt3">--</div></div>
+<div id="sa" style="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
+<div id="app">
+  <button id="gear">⚙</button>
+  <div id="demo"><label>距離 <span id="dv"></span>m<input id="ds" type="range" min="0" max="80" value="60"></label><label>相対角 <span id="av"></span>°<input id="as" type="range" min="-180" max="180" value="60"></label></div>
+  <div id="info">
+    <div id="l1">目標まで</div><div id="l2">--</div><div id="l3">--</div>
+  </div>
+  <div id="stage"></div>
+</div>
+<div id="menu"><div class="box">
+  <h1>HoloArrow</h1>
+  <input id="tg" placeholder="目標の緯度,経度 例: 35.6812,139.7671">
+  <input id="th" type="number" value="30" min="5" step="5" aria-label="目標圏(m)">
+  <div id="msg">↑ 目標圏の距離(m)　※URLに ?lat=..&amp;lng=.. でも指定可。?id=xxxx でFindARの座標を取得</div>
+  <label style="font-size:13px;color:var(--dim)">像の大きさ(%)　標準=100<input id="hm" type="number" value="100" min="50" max="200" step="5" style="width:100%;box-sizing:border-box"></label>
+  <label style="font-size:13px;color:var(--dim)">上下の像の中心距離(%)<input id="dy" type="number" value="100" min="50" max="200" step="5" style="width:100%;box-sizing:border-box"></label>
+  <label style="font-size:13px;color:var(--dim)">左右の像の中心距離(%)<input id="dx" type="number" value="100" min="50" max="250" step="5" style="width:100%;box-sizing:border-box"></label>
+  <label style="font-size:13px;color:var(--dim)">発光の強さ<input id="gl" type="range" min="0" max="2" step=".1" value="1" style="width:100%"></label>
+  <button class="p" id="go">開始（位置情報・方位センサー）</button>
+  <button id="dm">デモモード（スライダーで確認）</button>
+  <button id="v4">表示：4面ピラミッド</button>
+  <button id="mi">鏡像補正：ON</button>
+  <button id="gu">位置ガイド：OFF</button>
+  <button id="of">向き補正：0°</button>
+  <button id="cl">閉じる</button>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id), R=Math.random, D=Math.PI/180;
+const N=5000,PX=1.5;
+let mode4=true, mirror=true, offs=0, demo=false, TH=30, HM=26, FL=true, PORT=true;
+const PXMM=6.036, PBL=72, PBS=8, TOPL=130, TOPS=64, PHX=(TOPL-PBL)/2, PHY=(TOPS-PBS)/2, PH_=(PHX+PHY)/2, RL=50, RS=25, OB=10.3, SHF=.073, SHV=22, ZE=OB*3.06/(1.5*(RL-PBL/2)), ZS=OB*3.06/(1.5*(RS-PBS/2)); // 逆ピラミッド実寸(mm)。PXMM=1mmあたりのCSS px(iPhone 460ppi)
+let target=null, me=null, heading=null, dist=null, rel=0, relS=0, st=0;
+const q=new URLSearchParams(location.search);
+if(q.get('lat')&&q.get('lng')){target={lat:+q.get('lat'),lng:+q.get('lng')};$('tg').value=q.get('lat')+','+q.get('lng');}
+window.setTarget=(lat,lng)=>{target={lat:+lat,lng:+lng};$('tg').value=lat+','+lng;};
+/* 見る側の面(縦持ちの右)だけに文字を出す。反射で正しく読めるよう、回転+左右反転の行列を使う(FL=falseのときは像と同じく反転なし) */
+let _vt2='',_vt3='';
+function vtUpdate(){
+  const el=$('vt'),on=mode4&&PORT;
+  el.style.display=on?'block':'none';
+  if(!on)return;
+  const okv=demo||(target&&me&&heading!=null);
+  const t2=okv?(dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m'):'--';
+  const t3=okv?(st==2?'正面':(rel>0?'右方向へ':'左方向へ')+Math.abs(Math.round(rel))+'°'):'--';
+  if(t2!==_vt2){_vt2=t2;$('vt2').textContent=t2;}
+  if(t3!==_vt3){_vt3=t3;$('vt3').textContent=t3;}
+  const cy=Hh/2,xmax=W/2+(PBS/2+19.5)*PXMM;
+  el.style.setProperty('--mm',PXMM+'px');
+  el.style.transform=FL?'matrix(0,-1,-1,0,'+xmax+','+(cy+30*PXMM)+')':'matrix(0,1,-1,0,'+xmax+','+(cy+10*PXMM)+')';
+}
+
+/* ---- 形状サンプリング ---- */
+function sph(){const u=R()*2-1,a=R()*6.283,s=Math.sqrt(1-u*u);return[s*Math.cos(a),u,s*Math.sin(a)]}
+/* 立体矢印: 軸u(-1..1.25)と断面(a,b)で保持。軸は水平面内、円柱の軸+円錐の頭 */
+/* ナビ矢印: 先端T・切れ込みNn・羽先Rw/Lwの四角。中心線が高い屋根状に厚みをつける [前後u, 左右a, 高さb] */
+function arrowPt(){
+  const T=[1.1,0],Rw=[-1.05,.8],Nn=[-.5,0],Lw=[-1.05,-.8];
+  if(R()<.2){
+    const E=[[T,Rw,1,0],[Rw,Nn,0,1],[Nn,Lw,1,0],[Lw,T,0,1]][R()*4|0],s=R(),rd=E[2]+(E[3]-E[2])*s,h=.05+.22*rd;
+    const eu=E[0][0]+(E[1][0]-E[0][0])*s;
+    return[eu,E[0][1]+(E[1][1]-E[0][1])*s,(R()*2-1)*h*Math.min(1,(1.1-eu)/1.2)];
+  }
+  let p=R(),q=R();if(p+q>1){p=1-p;q=1-q;}
+  const Wg=R()<.5?Rw:Lw,wT=1-p-q,u=wT*T[0]+p*Wg[0]+q*Nn[0],a=wT*T[1]+p*Wg[1]+q*Nn[1];
+  return[u,a,(R()<.5?-1:1)*(.05+.22*(1-p))*Math.min(1,(1.1-u)/1.2)];
+}
+/* 人型: 楕円体パーツ [重み, 中心xyz, 半径xyz]。気をつけの立ち姿、+zが正面。腕・脲は体から少し離す */
+const HP=[[.28,0,.48,0,.21,.27,.22,-9],[.04,0,.15,0,.09,.12,.09,-9],[.43,0,-.62,0,.52,.62,.28,-.75],[.125,.42,-.07,0,.20,.13,.19,-9],[.125,-.42,-.07,0,.20,.13,.19,-9]]; /* バストアップ(高さ1.5=球の直径)。[重み,中心xyz,半径xyz,下端カットy] */
+const HW=HP.reduce((s,p)=>s+p[0],0);
+function humanPt(){
+  /* ピクトグラム(頭=円、肩=半楕円)。奥行きにふくらみを持たせ、横から見ても形が読めるようにする */
+  const u=R(),zt=(rho,k)=>(.04+k*Math.sqrt(Math.max(0,1-rho*rho)))*(R()*2-1);
+  if(u<.2){const a=R()*6.2832,r=.27*Math.sqrt(R());return[r*Math.cos(a),.48+r*Math.sin(a),zt(r/.27,.2)];}
+  if(u<.35){const a=R()*6.2832;return[.27*Math.cos(a),.48+.27*Math.sin(a),(R()*2-1)*.04];}
+  if(u<.7){for(;;){const x=(R()*2-1)*.6,y=-.75+R()*.9,q=(x/.6)**2+((y+.75)/.9)**2;if(q<=1)return[x,y,zt(Math.sqrt(q),.13)];}}
+  if(u<.95){const a=R()*Math.PI;return[.6*Math.cos(a),-.75+.9*Math.sin(a),(R()*2-1)*.04];}
+  return[(R()*2-1)*.6,-.75,(R()*2-1)*.04];
+}
+/* カールノイズ（湧き出し・吸い込みのない流れ） */
+const KV=new Float32Array(27),KXE=new Float32Array(27),PH=new Float32Array(9),V=new Float32Array(N*3);
+(()=>{const km=[1,1,1,2,2,2,4,4,4],am=[1,1,1,.5,.5,.5,.25,.25,.25];
+  for(let w=0;w<9;w++){const d=sph(),e=sph(),k=km[w]*.8;
+    KV.set([d[0]*k,d[1]*k,d[2]*k],w*3);
+    KXE.set([(d[1]*e[2]-d[2]*e[1])*am[w],(d[2]*e[0]-d[0]*e[2])*am[w],(d[0]*e[1]-d[1]*e[0])*am[w]],w*3);
+    PH[w]=R()*6.283;}})();
+const S=new Float32Array(N*3),A=new Float32Array(N*3),H=new Float32Array(N*3),P=new Float32Array(N*3),K=new Float32Array(N);
+const C=new Float32Array(N*3),GS=new Float32Array(N),GA=new Float32Array(N),GH=new Float32Array(N),GC=new Float32Array(N);
+for(let i=0;i<N;i++){
+  S.set(sph(),i*3);A.set(arrowPt(),i*3);H.set(humanPt(),i*3);
+  P.set(S.subarray(i*3,i*3+3),i*3);K[i]=.7+R()*.6;
+  GS[i]=(S[i*3+1]+1)/2;GA[i]=(A[i*3]+1.05)/2.15;GH[i]=(H[i*3+1]+.75)/1.5;GC[i]=GS[i];
+}
+
+/* ---- three.js ---- */
+const stage=$('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,1);
+stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene(), group=new THREE.Group(); scene.add(group);
+const cam=new THREE.PerspectiveCamera(40,1,.1,50); cam.position.set(0,0,4.2);
+const cv=document.createElement('canvas');cv.width=cv.height=64;
+const cx=cv.getContext('2d'),g=cx.createRadialGradient(32,32,0,32,32,32);
+g.addColorStop(0,'#fff');g.addColorStop(.45,'#fffc');g.addColorStop(1,'#fff0');cx.fillStyle=g;cx.fillRect(0,0,64,64);
+const geo=new THREE.BufferGeometry();
+geo.setAttribute('position',new THREE.BufferAttribute(P,3));
+geo.setAttribute('color',new THREE.BufferAttribute(C,3));
+const mat=new THREE.PointsMaterial({size:.02,map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexColors:true});
+const pts=new THREE.Points(geo,mat); group.add(pts);
+/* 発光: 柔らかい大きなハロを芯の後ろに重ねる */
+const cv2=document.createElement('canvas');cv2.width=cv2.height=64;
+const c2=cv2.getContext('2d'),g2=c2.createRadialGradient(32,32,0,32,32,32);
+g2.addColorStop(0,'rgba(255,255,255,.5)');g2.addColorStop(.2,'rgba(255,255,255,.3)');g2.addColorStop(.45,'rgba(255,255,255,.1)');g2.addColorStop(.75,'rgba(255,255,255,.02)');g2.addColorStop(1,'rgba(255,255,255,0)');c2.fillStyle=g2;c2.fillRect(0,0,64,64);
+const matH=new THREE.PointsMaterial({size:.05,map:new THREE.CanvasTexture(cv2),transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending,vertexColors:true});
+const halo=new THREE.Points(geo,matH);group.add(halo);
+const C0=[.05,.62,.28],C1=[.78,1,.22]; /* 緑 → 黄緑 */
+let W=1,Hh=1;
+function resize(){W=stage.clientWidth;Hh=stage.clientHeight;PORT=Hh>W;renderer.setSize(W,Hh);}
+addEventListener('resize',resize);resize();
+
+function view(x,y,w,h,az,rot,zm,sh){
+  const Y=Hh-(y+h);
+  renderer.setViewport(x,Y,w,h);renderer.setScissor(x,Y,w,h);
+  cam.aspect=1;cam.zoom=zm||1;cam.updateProjectionMatrix();if(FL)cam.projectionMatrix.elements[0]*=-1; /* 反射像は鏡像なので、先に左右反転してから回転 */
+  const e=.32,ce=Math.cos(e)*4.2;
+  cam.position.set(Math.sin(az)*ce,Math.sin(e)*4.2,Math.cos(az)*ce);
+  cam.up.set(0,1,0);cam.lookAt(0,-(sh||0),0);cam.rotateZ(FL?rot:-rot);
+  const br=(st==2&&(PORT?Math.abs(Math.sin(az))<.5:Math.abs(Math.sin(az))>.5))?.5:1;mat.opacity=br;matH.opacity=HB*br;renderer.render(scene,cam);
+}
+function draw(){
+  renderer.setScissorTest(true);
+  renderer.setViewport(0,0,W,Hh);renderer.setScissor(0,0,W,Hh);renderer.clear();
+  FL=mode4&&mirror;mat.size=(mode4?PX:PX*1.4)*8.4/Hh;matH.size=mat.size*6.5;HB=.1*(+$('gl').value)*kH;matH.opacity=HB;
+  if(!mode4){const s=Math.min(W,Hh);view((W-s)/2,(Hh-s)/2,s,s,0,0);return;}
+  /* 長方形の錐台(45°面)。面の像は h×h の正方形で、底辺の外側に並ぶ */
+  const SC=(+$('hm').value||100)/100,DY=(+$('dy').value||100)/100,DX=(+$('dx').value||100)/100,pt=Hh>W,cE=(RL-PBL/2)*PXMM*SC,cS=(RS-PBS/2)*PXMM*SC,oE=PBL/2*PXMM+cE/2,oS=PBS/2*PXMM+cS/2,cT=pt?cE:cS,cL=pt?cS:cE,oy=(pt?oE:oS)*DY,ox=(pt?oS:oE)*DX,ZA=st==1?.79:1,zT=pt?ZE*ZA:ZS,zL=pt?ZS:ZE*ZA,sT=pt?SHF:0,sL=pt?0:SHF,VSH=pt?SHV*PXMM:0,mx=W/2,my=Hh/2,nw=2*(ox+cL/2),nh=2*(oy+cT/2);$('warn').textContent=(W<nw-1||Hh<nh-1)?'表示領域不足: 必要'+Math.round(nw)+'×'+Math.round(nh)+' / 現在'+W+'×'+Hh:'';
+  /* 各面は『その面の側から見た像』。頭側が外向き */
+  view(mx-cT/2,my-oy-cT/2,cT,cT,Math.PI,0,zT,sT);
+  view(mx-cT/2,my+oy-cT/2,cT,cT,0,Math.PI,zT,sT);
+  view(mx-ox-cL/2,my-cL/2,cL,cL,-Math.PI/2,Math.PI/2,zL,sL);
+  view(mx+ox-cL/2,my-cL/2-VSH,cL,cL,Math.PI/2,-Math.PI/2,zL,sL);
+}
+
+/* ---- 位置・方位 ---- */
+function calc(a,b){
+  const p1=a.lat*D,p2=b.lat*D,dl=(b.lng-a.lng)*D;
+  const d=2*6371000*Math.asin(Math.sqrt(Math.sin((p2-p1)/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2));
+  const y=Math.sin(dl)*Math.cos(p2),x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);
+  return{d,b:(Math.atan2(y,x)/D+360)%360};
+}
+function onOri(e){
+  if(e.webkitCompassHeading!=null)heading=e.webkitCompassHeading;
+  else if(e.alpha!=null&&(e.absolute||e.type==='deviceorientationabsolute'))heading=(360-e.alpha)%360;
+}
+const wrap=a=>((a+540)%360)-180;
+
+/* ---- 表示更新 ---- */
+function update(t){
+  let status='';
+  if(demo){dist=+$('ds').value;rel=+$('as').value;$('dv').textContent=dist;$('av').textContent=rel;}
+  else if(!target)status='目標未設定';
+  else if(!me)status='測位中…';
+  else if(heading==null)status='方位待ち';
+  else{const r=calc(me,target);dist=r.d;rel=wrap(r.b-(heading+offs+(PORT?270:0)));}
+  const ok=demo||status==='';
+  if(ok){
+    const near=dist<=(st>0?TH*1.1:TH),front=Math.abs(rel)<=(st==2?8:5);
+    st=!near?0:front?2:1;
+    $('l2').textContent=dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m';
+    $('l3').textContent=Math.abs(rel)<=5?'正面':(rel>0?'右へ':'左へ')+Math.abs(Math.round(rel))+'°';
+  }else{st=0;$('l2').textContent='--';$('l3').textContent=status;}
+  relS+=wrap(rel-relS)*.1;
+}
+let lastT=0,kB=1,kH=1,kF=1,HB=.1;
+function morph(t){
+  const fx=PORT?-Math.cos(relS*D):Math.sin(relS*D),fz=PORT?-Math.sin(relS*D):-Math.cos(relS*D),rx=PORT?Math.sin(relS*D):-fz,rz=PORT?-Math.cos(relS*D):fx,cr=Math.cos(t*.0004),sr=Math.sin(t*.0004);
+  const dt=Math.min((t-lastT)/1000,.033),tt=t/1000*2.2,OM=2.0944,ph=t/1000*OM+1.5708,cq=Math.cos(ph),sq=Math.sin(ph);lastT=t;kB+=((st==0?1:st==1?.42:.45)-kB)*.05;kH+=((st==0?1:st==1?.15:.2)-kH)*.05;kF+=((st==1?0:1)-kF)*.05;
+  const kk=st==0?40:70,cc=st==0?8:11,AA=st==0?2:st==1?4:3; /* ばね・減衰・ノイズ強度 */
+  for(let i=0;i<N;i++){
+    const j=i*3;let tx,ty,tz,vx=0,vy=0,vz=0;
+    if(st==0){
+      const x=S[j],y=S[j+1],z=S[j+2],w=.75+Math.sin(t*.0012+i)*.05;
+      tx=(x*cr-z*sr)*w;ty=y*w+Math.sin(t*.0009+i*.7)*.05;tz=(x*sr+z*cr)*w;
+    }else if(st==1){
+      /* 進行方向(水平軸)まわりに3秒/周で回転。開始時は面が縦向き */
+      const u=A[j]*.76,a0=A[j+1]*.76,b0=A[j+2]*.76,a=a0*cq-b0*sq,b=a0*sq+b0*cq;
+      tx=u*fx+a*rx;ty=b;tz=u*fz+a*rz;
+      vx=-OM*b*rx;vy=OM*a;vz=-OM*b*rz;
+    }else{
+      tx=PORT?H[j+2]:H[j];ty=H[j+1]+Math.sin(t*.002)*.015;tz=PORT?-H[j]:H[j+2];
+    }
+    const px=P[j],py=P[j+1],pz=P[j+2];
+    let cx=0,cy=0,cz=0;
+    for(let w=0;w<9;w++){const c=Math.cos(KV[w*3]*px+KV[w*3+1]*py+KV[w*3+2]*pz+PH[w]+tt);cx+=c*KXE[w*3];cy+=c*KXE[w*3+1];cz+=c*KXE[w*3+2];}
+    const k=kk*K[i];
+    V[j]+=(k*(tx-px)-cc*(V[j]-vx)+AA*cx)*dt;V[j+1]+=(k*(ty-py)-cc*(V[j+1]-vy)+AA*cy)*dt;V[j+2]+=(k*(tz-pz)-cc*(V[j+2]-vz)+AA*cz)*dt;
+    P[j]+=V[j]*dt;P[j+1]+=V[j+1]*dt;P[j+2]+=V[j+2]*dt;
+    const gt=st==0?GS[i]:st==1?GA[i]:GH[i];GC[i]+=(gt-GC[i])*.08;const gg=GC[i];
+    const bb=i<2500?kB:kB*kF;C[j]=(C0[0]+(C1[0]-C0[0])*gg)*bb;C[j+1]=(C0[1]+(C1[1]-C0[1])*gg)*bb;C[j+2]=(C0[2]+(C1[2]-C0[2])*gg)*bb;
+  }
+  geo.attributes.position.needsUpdate=true;geo.attributes.color.needsUpdate=true;
+}
+function loop(t){if(sweep&&S2.as){let v=+$('as').value+.5;if(v>180)v=-180;S2.as(v);}update(t);morph(t);draw();drawGuide();vtUpdate();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+
+/* ---- メニュー ---- */
+function readTarget(){
+  const m=$('tg').value.split(/[,\s]+/).map(Number);
+  if(m.length>=2&&isFinite(m[0])&&isFinite(m[1]))target={lat:m[0],lng:m[1]};
+  TH=Math.max(5,+$('th').value||30);
+}
+$('go').onclick=async()=>{
+  readTarget();demo=false;$('demo').style.display='none';
+  try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)await DeviceOrientationEvent.requestPermission();}catch(e){}
+  addEventListener('deviceorientationabsolute',onOri,true);
+  addEventListener('deviceorientation',onOri,true);
+  if(navigator.geolocation)navigator.geolocation.watchPosition(p=>{me={lat:p.coords.latitude,lng:p.coords.longitude}},e=>{$('msg').textContent='位置情報エラー: '+e.message},{enableHighAccuracy:true,maximumAge:1000});
+  try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}
+  $('menu').style.display='none';
+};
+$('dm').onclick=()=>{readTarget();demo=true;$('demo').style.display='block';$('menu').style.display='none';};
+$('v4').onclick=e=>{mode4=!mode4;e.target.textContent='表示：'+(mode4?'4面ピラミッド':'1面');document.body.classList.toggle('m4',mode4);resize();};
+document.body.classList.add('m4');resize();
+$('mi').onclick=e=>{mirror=!mirror;e.target.textContent='鏡像補正：'+(mirror?'ON':'OFF');};
+$('of').onclick=e=>{offs=(offs+90)%360;e.target.textContent='向き補正：'+offs+'°';};
+$('cl').onclick=()=>{readTarget();$('menu').style.display='none';};
+$('gear').onclick=()=>{$('menu').style.display='flex';};
+document.addEventListener('touchmove',e=>{if(!e.target.closest('#menu'))e.preventDefault();},{passive:false});
+/* デモ用スライダー: ネイティブのrangeをやめ、ポインターキャプチャで自前処理（ページが動かないように） */
+let sweep=false;const S2={};
+['ds','as'].forEach(id=>{
+  const inp=$(id),lab=inp.parentNode,sl=document.createElement('div'),mn=+inp.min,mxv=+inp.max;
+  sl.className='sl';sl.innerHTML='<i></i><b></b>';lab.appendChild(sl);
+  const th=sl.lastChild;
+  const set=v=>{inp.value=v;th.style.left=((v-mn)/(mxv-mn)*100)+'%';};
+  const fromX=x=>{const r=sl.getBoundingClientRect();set(Math.round(mn+(mxv-mn)*Math.min(1,Math.max(0,(x-r.left)/r.width))));};
+  sl.addEventListener('pointerdown',e=>{sl.setPointerCapture(e.pointerId);fromX(e.clientX);});
+  sl.addEventListener('pointermove',e=>{if(sl.hasPointerCapture(e.pointerId))fromX(e.clientX);});
+  sl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  S2[id]=set;set(+inp.value);
+});
+const sw=document.createElement('button');sw.className='sw';sw.textContent='自動';
+sw.onclick=()=>{sweep=!sweep;sw.classList.toggle('on',sweep);};$('as').parentNode.appendChild(sw);
+/* 位置ガイド: 実寸で開口(緑)と上辺(橙)の枠を重ね、安全領域の実測値も表示 */
+const gd=document.createElement('canvas');gd.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none';document.body.appendChild(gd);
+let guide=false;
+function drawGuide(){
+  const g=gd.getContext('2d'),dp=Math.min(devicePixelRatio,2),w=innerWidth,h=innerHeight;
+  if(gd.width!==Math.round(w*dp)||gd.height!==Math.round(h*dp)){gd.width=Math.round(w*dp);gd.height=Math.round(h*dp);}
+  g.setTransform(dp,0,0,dp,0,0);g.clearRect(0,0,w,h);if(!guide)return;
+  const cx=w/2,cy=h/2,p=PXMM,pt=h>w,rc=(a,b)=>g.strokeRect(cx-a/2,cy-b/2,a,b),cs=getComputedStyle($('sa'));
+  g.lineWidth=1;g.strokeStyle='#0f0';pt?rc(PBS*p,PBL*p):rc(PBL*p,PBS*p);
+  g.strokeStyle='#f80';pt?rc(TOPS*p,TOPL*p):rc(TOPL*p,TOPS*p);
+  g.strokeStyle='#08f';pt?rc(2*RS*p,2*RL*p):rc(2*RL*p,2*RS*p);
+  g.fillStyle='#fff';g.font='11px sans-serif';
+  g.fillText('緑=底の開口 橙=上辺 青=表示範囲 / '+w+'×'+h+'px / 安全領域 上'+cs.paddingTop+' 下'+cs.paddingBottom+' 左'+cs.paddingLeft+' 右'+cs.paddingRight,8,h-8);
+}
+$('gu').onclick=e=>{guide=!guide;e.target.textContent='位置ガイド：'+(guide?'ON':'OFF');};
+</script>
+<script type="module">
+// ── FindAR連携: ?id=xxxx があるときだけ、Firestore(meetups/{id})から送信者の座標(lat,lng)を取得する ──
+// viewer.htmlと同じプロジェクト・同じコレクション。apiKey / appId / サイトキーは viewer.html の値を貼る
+// (取得できない環境、例えば Claudeアプリ内のプレビューでは、メッセージを出すだけで他は動く)
+const params=new URLSearchParams(location.search),id=params.get('id'),fs=document.getElementById('fs');
+if(id){
+  fs.textContent='座標を取得中…';
+  try{
+    const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    const {initializeAppCheck,ReCaptchaV3Provider}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js');
+    const firebaseConfig={apiKey:"YOUR_API_KEY",authDomain:"findar-ae099.firebaseapp.com",projectId:"findar-ae099",appId:"YOUR_APP_ID"};
+    const RECAPTCHA_SITE_KEY="YOUR_RECAPTCHA_SITE_KEY";
+    const app=initializeApp(firebaseConfig);
+    if(RECAPTCHA_SITE_KEY&&!RECAPTCHA_SITE_KEY.startsWith('YOUR_')){
+      try{
+        if(params.get('appcheckdebug')==='1')self.FIREBASE_APPCHECK_DEBUG_TOKEN=true;
+        initializeAppCheck(app,{provider:new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),isTokenAutoRefreshEnabled:true});
+      }catch(e){console.error('[APPCHECK]',e);}
+    }
+    const snap=await getDoc(doc(getFirestore(app),'meetups',id));
+    if(!snap.exists()){fs.textContent='座標が見つかりません(idを確認)';}
+    else{const d=snap.data();window.setTarget(d.lat,d.lng);fs.textContent='目標座標を取得しました';}
+  }catch(err){console.error('[FIRESTORE]',err);fs.textContent='座標の取得に失敗しました';}
+}
+</script>
+</body>
+</html>
