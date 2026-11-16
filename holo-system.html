@@ -7,6 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
+<link rel="icon" href="Holo_findAR_icon.png" type="image/png">
+<link rel="apple-touch-icon" href="Holo_findAR_icon.png">
 <title>HoloArrow</title>
 <style>
 :root{color-scheme:dark;--bg:#000;--fg:#e8f6ff;--ac:#5ff;--dim:#7a9aa8;box-sizing:border-box;padding:0}
@@ -35,8 +37,12 @@ html{overscroll-behavior:none}
 .sl b{position:absolute;top:4px;width:36px;height:36px;margin-left:-18px;border-radius:50%;background:#cf4;border:2px solid #fff;box-sizing:border-box}
 #demo .sw{position:absolute;right:10px;top:4px;font-size:12px;padding:2px 10px;border-radius:10px;border:1px solid #2a4;background:#031;color:var(--fg)}
 #demo .sw.on{background:#2a7}
+/* 本番ではデモモード(ボタンとスライダー)を出さない。?debug=1 を付けたときだけ表示 */
+body:not(.dbg) #dm,body:not(.dbg) #demo{display:none!important}
 #warn{position:fixed;left:52px;top:10px;z-index:3;font-size:11px;color:#f66;pointer-events:none}
 body:not(.m4) #warn{display:none}
+#dm{display:none}
+body.debug #dm{display:block}
 #fs{position:fixed;left:52px;top:28px;z-index:3;font-size:11px;color:#9cf;pointer-events:none}
 #vt{position:fixed;left:0;top:0;transform-origin:0 0;width:calc(var(--mm,6px)*26);height:calc(var(--mm,6px)*17);z-index:2;pointer-events:none;color:#cfff7a;text-shadow:0 0 calc(var(--mm,6px)*.6) rgba(140,255,120,.85);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;white-space:nowrap;display:none}
 #vt .a{font-size:calc(var(--mm,6px)*3.2);line-height:calc(var(--mm,6px)*4.2)}
@@ -90,6 +96,8 @@ let mode4=true, mirror=true, offs=0, demo=false, TH=30, HM=26, FL=true, PORT=tru
 const PXMM=6.036, PBL=72, PBS=8, TOPL=130, TOPS=64, PHX=(TOPL-PBL)/2, PHY=(TOPS-PBS)/2, PH_=(PHX+PHY)/2, RL=50, RS=25, OB=10.3, SHF=.073, SHV=22, ZE=OB*3.06/(1.5*(RL-PBL/2)), ZS=OB*3.06/(1.5*(RS-PBS/2)); // 逆ピラミッド実寸(mm)。PXMM=1mmあたりのCSS px(iPhone 460ppi)
 let target=null, me=null, heading=null, dist=null, rel=0, relS=0, st=0;
 const q=new URLSearchParams(location.search);
+if(q.get('debug')==='1')document.body.classList.add('dbg');
+if(q.get('debug')==='1')document.body.classList.add('debug'); /* ?debug=1 のときだけデモモードのボタンを出す(本番では非表示) */
 if(q.get('lat')&&q.get('lng')){target={lat:+q.get('lat'),lng:+q.get('lng')};$('tg').value=q.get('lat')+','+q.get('lng');}
 window.setTarget=(lat,lng)=>{target={lat:+lat,lng:+lng};$('tg').value=lat+','+lng;};
 /* 見る側の面(縦持ちの右)だけに文字を出す。反射で正しく読めるよう、回転+左右反転の行列を使う(FL=falseのときは像と同じく反転なし) */
@@ -331,15 +339,15 @@ if(id){
     // APIキーの制限(HTTPリファラ・利用できるAPI)はGoogle Cloudコンソールで設定するもので、コード側には書く場所がない
     // App Checkは下の initializeAppCheck で有効になる（サイトキーが YOUR_ のままだとスキップされる）
     const firebaseConfig = {
-  apiKey: "AIzaSyByb6EuWZ9Iy9QiR0Nw6IWRb8O_JQqpMSc",
-  authDomain: "findar-ae099.firebaseapp.com",
-  databaseURL: "https://findar-ae099-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "findar-ae099",
-  storageBucket: "findar-ae099.firebasestorage.app",
-  messagingSenderId: "1043165089164",
-  appId: "1:1043165089164:web:0db15bfbef3d85d8df1aa9",
-  measurementId: "G-J7H2LC9FFS"
-};
+      apiKey: "AIzaSyByb6EuWZ9Iy9QiR0Nw6IWRb8O_JQqpMSc",
+      authDomain: "findar-ae099.firebaseapp.com",
+      databaseURL: "https://findar-ae099-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "findar-ae099",
+      storageBucket: "findar-ae099.firebasestorage.app",
+      messagingSenderId: "1043165089164",
+      appId: "1:1043165089164:web:0db15bfbef3d85d8df1aa9",
+      measurementId: "G-J7H2LC9FFS"
+    };
     const RECAPTCHA_SITE_KEY="6LeQYFItAAAAAGaVvZx_Txa8M26qytXHou4ZXmqk";window.__appCheckOff=RECAPTCHA_SITE_KEY.startsWith('YOUR_');
     const app=initializeApp(firebaseConfig);
     if(RECAPTCHA_SITE_KEY&&!RECAPTCHA_SITE_KEY.startsWith('YOUR_')){

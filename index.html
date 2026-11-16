@@ -29,14 +29,12 @@
   }
   .card { width: 100%; max-width: 420px; padding: 32px 24px; box-sizing: border-box; text-align: center; }
 
-  /* ══ ロゴ(アイコン)サイズ調整はここ(.logo)を編集してください ══ */
+  /* ══ ロゴサイズ調整はここ(.logo)を編集してください ══ */
   .logo {
-    width: min(168px, 44vw);   /* ← 横幅の上限。数値を変えるとサイズが変わる */
-    height: auto;
+    width: min(320px, 80vw);  /* ← 横幅の上限。数値を変えるとサイズが変わる */
+    height: auto;              /* 元画像比率(735x300)を維持したまま高さは自動計算 */
     margin: 0 auto 28px;
     display: block;
-    border-radius: 12%;
-    box-shadow: 0 10px 30px #0006;
   }
 
   .desc { font-size: 13px; color: var(--sub); line-height: 1.7; margin: 0 0 8px; }
@@ -68,7 +66,7 @@
 
 <!-- ══ ページ1：初回の送信 ══ -->
 <div class="card" id="page-1">
-  <img src="FindAR_logo_w.png" alt="Holo FindAR" class="logo">
+  <img src="FindAR_logo_w.png" alt="FindAR" class="logo">
   <p class="desc">現在地を取得し、ホログラムで方向を示す共有リンクを作成します。</p>
   <button id="share-initial">Share where you're</button>
   <p class="btn-desc">タップすると現在地を取得し、共有用リンクをコピーします。</p>
@@ -76,7 +74,7 @@
 
 <!-- ══ ページ2：送信後の更新・再共有 ══ -->
 <div class="card" id="page-2">
-  <img src="FindAR_logo_w.png" alt="Holo FindAR" class="logo">
+  <img src="FindAR_logo_w.png" alt="FindAR" class="logo">
 
   <button id="update-location">Update</button>
   <p class="btn-desc">現在地を再取得し、新しいリンクをコピーします。移動した場合はこちら。</p>
@@ -107,7 +105,7 @@ const firebaseConfig = {
 };
 
 // 受信側(矢印ホログラム)ページの公開URL。ファイル名を変えたらここも合わせる
-const HOLO_URL = "https://shiguretei-amagasa.github.io/FindAR/holo-arrow.html";
+const HOLO_URL = "https://shiguretei-amagasa.github.io/Holo-FindAR/holo-system.html";
 
 const app = initializeApp(firebaseConfig);
 
