@@ -39,6 +39,10 @@ html{overscroll-behavior:none}
 #demo .sw.on{background:#2a7}
 /* 本番ではデモモード(ボタンとスライダー)を出さない。?debug=1 を付けたときだけ表示 */
 body:not(.dbg) #dm,body:not(.dbg) #demo{display:none!important}
+/* 本番のメニューは「開始」だけ。調整用の項目と⚙は ?debug=1 のときだけ表示 */
+body:not(.dbg) #menu .box>:not(h1):not(#go){display:none!important}
+body:not(.dbg) #gear{display:none!important}
+#menu input[type=range]{box-sizing:border-box;padding:0;width:100%}
 #warn{position:fixed;left:52px;top:10px;z-index:3;font-size:11px;color:#f66;pointer-events:none}
 body:not(.m4) #warn{display:none}
 #dm{display:none}
