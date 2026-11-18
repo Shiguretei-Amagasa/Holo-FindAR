@@ -47,11 +47,13 @@ body:not(.dbg) #gear{display:none!important}
 body:not(.m4) #warn{display:none}
 #dm{display:none}
 body.debug #dm{display:block}
-#fs{position:fixed;left:52px;top:28px;z-index:3;font-size:11px;color:#9cf;pointer-events:none}
+#fs{display:none;position:fixed;left:8px;top:46px;max-width:140px;z-index:3;font-size:11px;color:#9cf;pointer-events:none}
+body.dbg #fs{display:block}
 #vt{position:fixed;left:0;top:0;transform-origin:0 0;width:calc(var(--mm,6px)*26);height:calc(var(--mm,6px)*17);z-index:2;pointer-events:none;color:#cfff7a;text-shadow:0 0 calc(var(--mm,6px)*.6) rgba(140,255,120,.85);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;white-space:nowrap;display:none}
 #vt .a{font-size:calc(var(--mm,6px)*3.2);line-height:calc(var(--mm,6px)*4.2)}
 #vt .b{font-size:calc(var(--mm,6px)*7);line-height:calc(var(--mm,6px)*8);font-weight:700}
 #vt .c{font-size:calc(var(--mm,6px)*3.6);line-height:calc(var(--mm,6px)*4.8)}
+#vts{font-size:calc(var(--mm,6px)*3.6);line-height:calc(var(--mm,6px)*4.8);white-space:normal}
 body.m4 #info{display:none}
 body.m4 #stage{width:100%}
 #menu{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:5}
@@ -64,8 +66,8 @@ body.m4 #stage{width:100%}
 </head>
 <body>
 <div id="warn"></div>
-<div id="fs"></div>
-<div id="vt"><div class="a">目的地まで</div><div class="b" id="vt2">--</div><div class="c" id="vt3">--</div></div>
+<div id="fs">座標取得中…</div>
+<div id="vt"><div id="vts">座標取得中…</div><div id="vtm" style="display:none"><div class="a">目的地まで</div><div class="b" id="vt2">--</div><div class="c" id="vt3">--</div></div></div>
 <div id="sa" style="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
 <div id="app">
   <button id="gear">⚙</button>
@@ -105,12 +107,18 @@ if(q.get('debug')==='1')document.body.classList.add('debug'); /* ?debug=1 のと
 if(q.get('lat')&&q.get('lng')){target={lat:+q.get('lat'),lng:+q.get('lng')};$('tg').value=q.get('lat')+','+q.get('lng');}
 window.setTarget=(lat,lng)=>{target={lat:+lat,lng:+lng};$('tg').value=lat+','+lng;};
 /* 見る側の面(縦持ちの右)だけに文字を出す。反射で正しく読めるよう、回転+左右反転の行列を使う(FL=falseのときは像と同じく反転なし) */
-let _vt2='',_vt3='';
+let _vt2='',_vt3='',_fsm='座標取得中…',_vts='';
 function vtUpdate(){
   const el=$('vt'),on=mode4&&PORT;
-  el.style.display=on?'block':'none';
-  if(!on)return;
   const okv=demo||(target&&me&&heading!=null);
+  el.style.display=on?'block':'none';
+  $('vtm').style.display=okv?'block':'none';
+  $('vts').style.display=okv?'none':'block';
+  $('fs').style.display=okv?'none':'';   /* 距離が出る(=座標取得済み)と状態メッセージは消す。距離が出る前だけ表示 */
+  if(!okv){const m=window.__fsErr||(target?'目標座標を取得しました。':'座標取得中…');if(m!==_fsm){_fsm=m;$('fs').textContent=m;}}
+  /* 状態表示(通常=座標取得中… / 取得時=目標座標を取得しました。 / 利用中=目的地まで)。「目的地まで」と同じ位置・向きに出す */
+  if(!okv){const e=window.__fsErr,h=e?(e.indexOf('見つかりません')>=0?'座標が<br>見つかりません':'座標の取得に<br>失敗しました'):(target?'目標座標を<br>取得しました。':'座標取得中…');if(h!==_vts){_vts=h;$('vts').innerHTML=h;}}
+  if(!on)return;
   const t2=okv?(dist>=1000?(dist/1000).toFixed(1)+'km':Math.round(dist)+'m'):'--';
   const t3=okv?(st==2?'正面':(rel>0?'右方向へ':'左方向へ')+Math.abs(Math.round(rel))+'°'):'--';
   if(t2!==_vt2){_vt2=t2;$('vt2').textContent=t2;}
@@ -334,7 +342,7 @@ $('gu').onclick=e=>{guide=!guide;e.target.textContent='位置ガイド：'+(guid
 // (取得できない環境、例えば Claudeアプリ内のプレビューでは、メッセージを出すだけで他は動く)
 const params=new URLSearchParams(location.search),id=params.get('id'),fs=document.getElementById('fs');
 if(id){
-  fs.textContent='座標を取得中…';
+  
   try{
     const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
     const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
@@ -361,9 +369,9 @@ if(id){
       }catch(e){console.error('[APPCHECK]',e);}
     }
     const snap=await getDoc(doc(getFirestore(app),'meetups',id));
-    if(!snap.exists()){fs.textContent='座標が見つかりません(idを確認)';}
-    else{const d=snap.data();window.setTarget(d.lat,d.lng);fs.textContent='目標座標を取得しました';}
-  }catch(err){console.error('[FIRESTORE]',err);fs.textContent='座標の取得に失敗しました'+(window.__appCheckOff?'（App Check未設定）':'');}
+    if(!snap.exists()){window.__fsErr='座標が見つかりません（idを確認）';}
+    else{const d=snap.data();window.setTarget(d.lat,d.lng);}
+  }catch(err){console.error('[FIRESTORE]',err);window.__fsErr='座標の取得に失敗しました'+(window.__appCheckOff?'（App Check未設定）':'');}
 }
 </script>
 </body>
